@@ -51,14 +51,13 @@
 			<url>http://repo.jenkins-ci.org/public/</url>
 		</pluginRepository>
 	</pluginRepositories>
-	<!-- If you want to depend on other plugins:
-	  <dependencies>
+
+	<dependencies>
 		<dependency>
-		  <groupId>org.jenkins-ci.plugins</groupId>
-		  <artifactId>credentials</artifactId>
-		  <version>1.9.4</version>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>google-oauth-plugin</artifactId>
+			<version>0.3</version>
 		</dependency>
-	  </dependencies>
-	  -->
+	</dependencies>
 
 </project>
