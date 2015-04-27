@@ -1,14 +1,15 @@
 package com.byclosure.jenkins.plugins.gcloud;
 
 
-import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.google.jenkins.plugins.credentials.domains.RequiresDomain;
-import com.google.jenkins.plugins.credentials.oauth.*;
+import com.google.jenkins.plugins.credentials.oauth.JsonServiceAccountConfig;
+import com.google.jenkins.plugins.credentials.oauth.P12ServiceAccountConfig;
+import com.google.jenkins.plugins.credentials.oauth.ServiceAccountConfig;
 import hudson.Extension;
-import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.*;
-import hudson.slaves.SlaveComputer;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
@@ -18,7 +19,8 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.servlet.ServletException;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 
 @RequiresDomain(value = GCloudScopeRequirement.class)
 public class GCloudSDKBuilder extends Builder {
@@ -36,73 +38,28 @@ public class GCloudSDKBuilder extends Builder {
 		return command;
 	}
 
-	private ServiceAccountConfig getServiceAccountConfig(AbstractBuild build) {
-		final GoogleRobotPrivateKeyCredentials credential = CredentialsProvider.findCredentialById(
-				credentialsId,
-				GoogleRobotPrivateKeyCredentials.class,
-				build,
-				new GCloudScopeRequirement()
-		);
-
-		return credential.getServiceAccountConfig();
-	}
-
 	@Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-		final ServiceAccountConfig serviceAccount = getServiceAccountConfig(build);
+		final GCloudServiceAccount serviceAccount =
+				GCloudServiceAccount.getServiceAccount(build, launcher, listener, credentialsId);
 
-		final String accountId = serviceAccount.getAccountId();
-		final File keyFile = getKeyFile(serviceAccount);
-
-		FilePath tmpDir = build.getWorkspace().createTempDir("gcloud", null);
-		FilePath tmpKeyFile = new FilePath(launcher.getChannel(),
-				new File(tmpDir.getRemote(), keyFile.getName()).getPath());
-		tmpKeyFile.copyFrom(new FilePath(keyFile));
-
-		if (!addCredentials(build, launcher, listener, accountId, tmpKeyFile, tmpDir)) {
-			removeTmpDir(tmpDir);
+		if (!serviceAccount.activate()) {
+			serviceAccount.cleanUp();
 			return false;
 		}
 
 		if (!executeGCloudCLI(build, launcher, listener)) {
-			revokeCredentials(build, launcher, listener, accountId);
-			removeTmpDir(tmpDir);
+			serviceAccount.revoke();
+			serviceAccount.cleanUp();
 			return false;
 		}
 
-		if (!revokeCredentials(build, launcher, listener, accountId)) {
-			removeTmpDir(tmpDir);
+		if (!serviceAccount.revoke()) {
+			serviceAccount.cleanUp();
 			return false;
 		}
 
-		removeTmpDir(tmpDir);
-		return true;
-	}
-
-	private File getKeyFile(ServiceAccountConfig serviceAccount) {
-		String keyFilePath = null;
-
-		if (serviceAccount instanceof JsonServiceAccountConfig) {
-			keyFilePath = ((JsonServiceAccountConfig)serviceAccount).getJsonKeyFile();
-		} else if (serviceAccount instanceof JsonServiceAccountConfig) {
-			keyFilePath = ((P12ServiceAccountConfig)serviceAccount).getP12KeyFile();
-		}
-
-		return new File(keyFilePath);
-	}
-
-	private boolean addCredentials(AbstractBuild build, Launcher launcher, BuildListener listener, String accountId, FilePath tmpKeyFile, FilePath tmpDir) throws IOException, InterruptedException {
-		final String authCmd = "gcloud auth activate-service-account " + accountId + " --key-file " + tmpKeyFile.getRemote();
-
-		int retCode = launcher.launch()
-				.pwd(build.getWorkspace())
-				.cmdAsSingleString(authCmd)
-				.stdout(listener.getLogger())
-				.join();
-
-		if (retCode != 0) {
-			return false;
-		}
+		serviceAccount.cleanUp();
 		return true;
 	}
 
@@ -117,27 +74,6 @@ public class GCloudSDKBuilder extends Builder {
 			return false;
 		}
 		return true;
-	}
-
-	private boolean revokeCredentials(AbstractBuild build, Launcher launcher, BuildListener listener, String accountId) throws IOException, InterruptedException {
-		final String revokeCmd = "gcloud auth revoke " + accountId ;
-
-		int retCode = launcher.launch()
-				.pwd(build.getWorkspace())
-				.cmdAsSingleString(revokeCmd)
-				.stdout(listener.getLogger())
-				.join();
-
-		if (retCode != 0) {
-			return false;
-		}
-		return true;
-	}
-
-	private void removeTmpDir(FilePath tmpDir) throws IOException, InterruptedException {
-		if(Computer.currentComputer() instanceof SlaveComputer) {
-			tmpDir.deleteRecursive();
-		}
 	}
 
 	@Override
@@ -176,5 +112,7 @@ public class GCloudSDKBuilder extends Builder {
 			return super.configure(req, formData);
 		}
 	}
+
+
 }
 
