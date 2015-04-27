@@ -19,12 +19,14 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 
 @RequiresDomain(value = GCloudScopeRequirement.class)
-public class GCloudSDKBuilder extends Builder {
+public class GCloudSDKWithAuthBuilder extends Builder {
 
+	private final String credentialsId;
 	private final String command;
 
 	@DataBoundConstructor
-	public GCloudSDKBuilder(String command) {
+	public GCloudSDKWithAuthBuilder(String credentialsId, String command) {
+		this.credentialsId = credentialsId;
 		this.command = command;
 	}
 
@@ -34,10 +36,26 @@ public class GCloudSDKBuilder extends Builder {
 
 	@Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-		if (!executeGCloudCLI(build, launcher, listener)) {
+		final GCloudServiceAccount serviceAccount =
+				GCloudServiceAccount.getServiceAccount(build, launcher, listener, credentialsId);
+
+		if (!serviceAccount.activate()) {
+			serviceAccount.cleanUp();
 			return false;
 		}
 
+		if (!executeGCloudCLI(build, launcher, listener)) {
+			serviceAccount.revoke();
+			serviceAccount.cleanUp();
+			return false;
+		}
+
+		if (!serviceAccount.revoke()) {
+			serviceAccount.cleanUp();
+			return false;
+		}
+
+		serviceAccount.cleanUp();
 		return true;
 	}
 
@@ -59,6 +77,10 @@ public class GCloudSDKBuilder extends Builder {
 		return (DescriptorImpl) super.getDescriptor();
 	}
 
+	public String getCredentialsId() {
+		return credentialsId;
+	}
+
 	@Extension
 	public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 		public DescriptorImpl() {
@@ -77,7 +99,7 @@ public class GCloudSDKBuilder extends Builder {
 		}
 
 		public String getDisplayName() {
-			return "Execute gcloud CLI";
+			return "Execute gcloud CLI (with auth)";
 		}
 
 		@Override
