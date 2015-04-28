@@ -55,6 +55,10 @@ public class GCloudBuildWrapper extends BuildWrapper {
 		};
 	}
 
+	public String getCredentialsId() {
+		return credentialsId;
+	}
+
 	@Extension
 	public static final class DescriptorImpl extends BuildWrapperDescriptor {
 		public DescriptorImpl() {
