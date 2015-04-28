@@ -8,7 +8,9 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
 import java.util.Map;
@@ -55,6 +57,10 @@ public class GCloudBuildWrapper extends BuildWrapper {
 
 	@Extension
 	public static final class DescriptorImpl extends BuildWrapperDescriptor {
+		public DescriptorImpl() {
+			load();
+		}
+
 		@Override
 		public String getDisplayName() {
 			return "GCloud authentication";
@@ -65,5 +71,10 @@ public class GCloudBuildWrapper extends BuildWrapper {
 			return true;
 		}
 
+		@Override
+		public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
+			save();
+			return super.configure(req, formData);
+		}
 	}
 }
