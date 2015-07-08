@@ -8,13 +8,18 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import com.google.jenkins.plugins.credentials.domains.RequiresDomain;
 import com.google.jenkins.plugins.credentials.oauth.GoogleRobotPrivateKeyCredentials;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.Launcher.DecoratedLauncher;
+import hudson.Proc;
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Item;
+import hudson.model.Run;
 import hudson.security.ACL;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
@@ -26,6 +31,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import javax.annotation.CheckForNull;
 import java.io.IOException;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -43,10 +49,37 @@ public class GCloudBuildWrapper extends BuildWrapper {
         this.credentialsId = credentialsId;
     }
 
-	@Override
-	public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
+
+    @Override
+    public Launcher decorateLauncher(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException, Run.RunnerAbortedException {
 
         final ToolInstallation sdk = getSDK().translate(build, listener);
+
+        return new Launcher.DecoratedLauncher(launcher) {
+
+            @Override
+            public Proc launch(ProcStarter starter) throws IOException {
+                EnvVars vars = toEnvVars(starter.envs());
+                if (sdk != null) {
+                    sdk.buildEnvVars(vars);
+                }
+                return super.launch(starter.envs(Util.mapToEnv(vars)));
+            }
+
+            private EnvVars toEnvVars(String[] envs) {
+                EnvVars vars = new EnvVars();
+                for (String line : envs) {
+                    vars.addLine(line);
+                }
+                return vars;
+            }
+        };
+
+    }
+
+    @Override
+	public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
+
         final FilePath configDir = build.getWorkspace().createTempDir("gcloud", "config");
 
 		final GCloudServiceAccount serviceAccount =
@@ -72,17 +105,15 @@ public class GCloudBuildWrapper extends BuildWrapper {
 				serviceAccount.cleanUp();
 				return true;
 			}
-
 		};
 	}
 
-    public GCloudInstallation getSDK() {
+    public @CheckForNull GCloudInstallation getSDK() {
         GCloudInstallation[] installations = GCloudInstallation.getInstallations();
-        if (installations.length == 1) return installations[0];
         for (GCloudInstallation sdk : installations) {
             if (installation.equals(sdk.getName())) return sdk;
         }
-        throw new IllegalArgumentException("Invalid GCloud SDK installation "+installation);
+        return null;
     }
 
 

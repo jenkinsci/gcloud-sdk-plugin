@@ -27,7 +27,8 @@ public class GCloudInstallation extends ToolInstallation implements NodeSpecific
 
 
     public void buildEnvVars(EnvVars env) {
-        env.override("PATH+GCLOUD", getHome());
+        env.override("PATH+GCLOUD", getHome()+"/bin");
+        env.override("CLOUDSDK_PYTHON_SITEPACKAGES", "1");
     }
 
 
