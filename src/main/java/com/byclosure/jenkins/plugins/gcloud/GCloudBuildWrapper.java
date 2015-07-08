@@ -9,6 +9,7 @@ import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import com.google.jenkins.plugins.credentials.domains.RequiresDomain;
 import com.google.jenkins.plugins.credentials.oauth.GoogleRobotPrivateKeyCredentials;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -46,9 +47,10 @@ public class GCloudBuildWrapper extends BuildWrapper {
 	public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
 
         final ToolInstallation sdk = getSDK().translate(build, listener);
+        final FilePath configDir = build.getWorkspace().createTempDir("gcloud", "config");
 
 		final GCloudServiceAccount serviceAccount =
-				GCloudServiceAccount.getServiceAccount(build, launcher, listener, credentialsId);
+				GCloudServiceAccount.getServiceAccount(build, launcher, listener, credentialsId, configDir);
 
 		if (!serviceAccount.activate()) {
 			serviceAccount.cleanUp();

@@ -5,6 +5,7 @@ import com.google.jenkins.plugins.credentials.oauth.GoogleRobotPrivateKeyCredent
 import com.google.jenkins.plugins.credentials.oauth.JsonServiceAccountConfig;
 import com.google.jenkins.plugins.credentials.oauth.P12ServiceAccountConfig;
 import com.google.jenkins.plugins.credentials.oauth.ServiceAccountConfig;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
@@ -19,9 +20,10 @@ public class GCloudServiceAccount {
 	private final BuildListener listener;
 	private final String accountId;
 	private final TemporaryKeyFile tmpKeyFile;
+    private final FilePath configDir;
 
-	public static GCloudServiceAccount getServiceAccount(AbstractBuild build, Launcher launcher,
-												   BuildListener listener, String credentialsId) throws IOException, InterruptedException {
+    public static GCloudServiceAccount getServiceAccount(AbstractBuild build, Launcher launcher,
+                                                         BuildListener listener, String credentialsId, FilePath configDir) throws IOException, InterruptedException {
 		final GoogleRobotPrivateKeyCredentials credential = CredentialsProvider.findCredentialById(
 				credentialsId,
 				GoogleRobotPrivateKeyCredentials.class,
@@ -37,7 +39,7 @@ public class GCloudServiceAccount {
 		TemporaryKeyFile tmpKeyFile = new TemporaryKeyFile(build, launcher, keyFile);
 		tmpKeyFile.copyToTmpDir();
 
-		return new GCloudServiceAccount(build, launcher, listener, accountId, tmpKeyFile);
+		return new GCloudServiceAccount(build, launcher, listener, accountId, tmpKeyFile, configDir);
 	}
 
 	private static File getKeyFile(ServiceAccountConfig serviceAccount) {
@@ -52,22 +54,24 @@ public class GCloudServiceAccount {
 		return new File(keyFilePath);
 	}
 
-	private GCloudServiceAccount(AbstractBuild build, Launcher launcher, BuildListener listener, String accountId, TemporaryKeyFile tmpKeyFile) {
+	private GCloudServiceAccount(AbstractBuild build, Launcher launcher, BuildListener listener, String accountId, TemporaryKeyFile tmpKeyFile, FilePath configDir) {
 		this.build = build;
 		this.launcher = launcher;
 		this.listener = listener;
 		this.accountId = accountId;
 		this.tmpKeyFile = tmpKeyFile;
+        this.configDir = configDir;
 	}
 
 	boolean activate() throws IOException, InterruptedException {
 		final String authCmd = "gcloud auth activate-service-account " + accountId + " --key-file " + tmpKeyFile.getKeyFile().getRemote();
 
 		int retCode = launcher.launch()
-				.pwd(build.getWorkspace())
+                .pwd(build.getWorkspace())
 				.cmdAsSingleString(authCmd)
-				.stdout(listener.getLogger())
-				.join();
+                .stdout(listener.getLogger())
+                .envs("CLOUDSDK_CONFIG=" + configDir.getRemote())
+                .join();
 
 		if (retCode != 0) {
 			return false;
@@ -93,5 +97,6 @@ public class GCloudServiceAccount {
 
 	void cleanUp() throws IOException, InterruptedException {
 		tmpKeyFile.remove();
+        configDir.deleteRecursive();
 	}
 }
