@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler">
+    <st:documentation>
+        Renders a form field to select a GCloud installation.
+        The field is expected to be a String tool name, with Util.fixEmpty on the @DataBoundSetter to account for the default.
+        <st:attribute name="field" use="required">
+           Form field name. Used for databinding.
+        </st:attribute>
+    </st:documentation>
+
+    <j:set var="installations" value="${app.getDescriptorByName('com.cloudbees.jenkins.plugins.gcloudsdk.GCloudInstallation').installations}"/>
+    <j:if test="${not empty installations}">
+        <f:entry title="${%GCloud SDK installation}">
+            <select class="setting-input" name="_.${attrs.field}">
+                <option value="">(${%Default})</option>
+                <j:forEach var="tool" items="${installations}">
+                    <f:option selected="${tool.name == instance[attrs.field]}" value="${tool.name}">${tool.name}</f:option>
+                </j:forEach>
+            </select>
+        </f:entry>
+    </j:if>
+</j:jelly>

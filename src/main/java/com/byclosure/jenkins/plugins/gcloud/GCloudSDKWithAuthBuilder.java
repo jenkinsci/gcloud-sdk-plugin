@@ -3,6 +3,7 @@ package com.byclosure.jenkins.plugins.gcloud;
 
 import com.google.jenkins.plugins.credentials.domains.RequiresDomain;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -36,15 +37,17 @@ public class GCloudSDKWithAuthBuilder extends Builder {
 
 	@Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+
+        final FilePath configDir = build.getWorkspace().createTempDir("gcloud", "config");
 		final GCloudServiceAccount serviceAccount =
-				GCloudServiceAccount.getServiceAccount(build, launcher, listener, credentialsId);
+				GCloudServiceAccount.getServiceAccount(build, launcher, listener, credentialsId, configDir);
 
 		if (!serviceAccount.activate()) {
 			serviceAccount.cleanUp();
 			return false;
 		}
 
-		if (!executeGCloudCLI(build, launcher, listener)) {
+		if (!executeGCloudCLI(build, launcher, listener, configDir)) {
 			serviceAccount.revoke();
 			serviceAccount.cleanUp();
 			return false;
@@ -59,12 +62,13 @@ public class GCloudSDKWithAuthBuilder extends Builder {
 		return true;
 	}
 
-	private boolean executeGCloudCLI(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
+	private boolean executeGCloudCLI(AbstractBuild build, Launcher launcher, BuildListener listener, FilePath configDir) throws IOException, InterruptedException {
 		int retCode = launcher.launch()
 				.pwd(build.getWorkspace())
 				.cmdAsSingleString("gcloud " + command)
 				.stdout(listener.getLogger())
-				.join();
+                .envs("CLOUDSDK_CONFIG=" + configDir.getRemote())
+                .join();
 
 		if (retCode != 0) {
 			return false;
