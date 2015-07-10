@@ -9,42 +9,43 @@
 		<version>1.580.1</version>
 		<relativePath/>
 	</parent>
+
 	<groupId>com.byclosure.jenkins.plugins</groupId>
 	<artifactId>gcloud-sdk</artifactId>
 	<version>1.0-SNAPSHOT</version>
 	<packaging>hpi</packaging>
 
 	<name>GCloud SDK Plugin</name>
-	<description>GCloud SDK Plugin allows the invocation of the gcloud CLI as a job step.</description>
-	<url>https://wiki.jenkins-ci.org/display/JENKINS/TODO+Plugin</url>
+	<description>GCloud SDK Plugin allows users to invoke gcloud tools with jenkins credentials.</description>
+	<url>https://wiki.jenkins-ci.org/display/JENKINS/GCloud+SDK+Plugin</url>
 	<licenses>
 		<license>
 			<name>MIT License</name>
 			<url>http://opensource.org/licenses/MIT</url>
 		</license>
 	</licenses>
-	<!-- If you want this to appear on the wiki page:
-	  <developers>
+
+	<developers>
 		<developer>
-		  <id>bhacker</id>
-		  <name>Bob Q. Hacker</name>
-		  <email>bhacker@nowhere.net</email>
+			<id>jrluis</id>
+			<name>João Luís</name>
+			<email>jrluis@gmail.com</email>
 		</developer>
-	  </developers>
-	  -->
-	<!-- Assuming you want to host on @jenkinsci:
-	  <scm>
-		<connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
-		<developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-		<url>http://github.com/jenkinsci/${project.artifactId}-plugin</url>
-	  </scm>
-	   -->
+	</developers>
+
+	<scm>
+		<connection>scm:git:git://github.com/jenkinsci/gcloud-sdk-plugin.git</connection>
+		<developerConnection>scm:git:git@github.com:jenkinsci/gcloud-sdk-plugin.git</developerConnection>
+		<url>https://github.com/jenkinsci/gcloud-sdk-plugin</url>
+	</scm>
+
 	<repositories>
 		<repository>
 			<id>repo.jenkins-ci.org</id>
 			<url>http://repo.jenkins-ci.org/public/</url>
 		</repository>
 	</repositories>
+
 	<pluginRepositories>
 		<pluginRepository>
 			<id>repo.jenkins-ci.org</id>
