@@ -62,11 +62,14 @@ public class GCloudServiceAccount {
         this.configDir = configDir;
 	}
 
-	boolean activate() throws IOException, InterruptedException {
-		final String authCmd = "gcloud auth activate-service-account " + accountId + " --key-file " + tmpKeyFile.getKeyFile().getRemote();
+	boolean activate(GCloudInstallation sdk) throws IOException, InterruptedException {
+		String exec = "gcloud";
+		if (sdk != null) {
+			exec = sdk.getExecutable();
+		}
+		final String authCmd = exec + " auth activate-service-account " + accountId + " --key-file " + tmpKeyFile.getKeyFile().getRemote();
 
 		int retCode = launcher.launch()
-                .pwd(build.getWorkspace())
 				.cmdAsSingleString(authCmd)
                 .stdout(listener.getLogger())
                 .envs("CLOUDSDK_CONFIG=" + configDir.getRemote())

@@ -44,6 +44,10 @@ public class GCloudInstallation extends ToolInstallation implements NodeSpecific
         return Jenkins.getInstance().getDescriptorByType(DescriptorImpl.class).getInstallations();
     }
 
+    public String getExecutable() {
+        return getHome()+"/bin/gcloud";
+    }
+
     @Extension
     public static class DescriptorImpl extends ToolDescriptor<GCloudInstallation> {
 
