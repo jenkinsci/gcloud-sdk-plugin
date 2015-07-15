@@ -31,6 +31,11 @@ public class GCloudSDKWithAuthBuilder extends Builder {
 		this.command = command;
 	}
 
+	public String getCredentialsId() {
+		return credentialsId;
+	}
+
+
 	public String getCommand() {
 		return command;
 	}
@@ -63,19 +68,12 @@ public class GCloudSDKWithAuthBuilder extends Builder {
                 .envs("CLOUDSDK_CONFIG=" + configDir.getRemote())
                 .join();
 
-		if (retCode != 0) {
-			return false;
-		}
-		return true;
+		return retCode == 0;
 	}
 
 	@Override
 	public DescriptorImpl getDescriptor() {
 		return (DescriptorImpl) super.getDescriptor();
-	}
-
-	public String getCredentialsId() {
-		return credentialsId;
 	}
 
 	@Extension
