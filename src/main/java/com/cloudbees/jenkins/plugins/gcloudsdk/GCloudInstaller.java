@@ -7,6 +7,8 @@ import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.tools.DownloadFromUrlInstaller;
 import hudson.tools.ToolInstallation;
+import hudson.util.ArgumentListBuilder;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -18,9 +20,17 @@ import java.util.List;
  */
 public class GCloudInstaller extends DownloadFromUrlInstaller {
 
+
+    private String additionalComponents;
+
     @DataBoundConstructor
-    public GCloudInstaller(String id) {
+    public GCloudInstaller(String id, String additionalComponents) {
         super(id);
+        this.additionalComponents = additionalComponents;
+    }
+
+    public String getAdditionalComponents() {
+        return additionalComponents;
     }
 
     @Override
@@ -28,10 +38,16 @@ public class GCloudInstaller extends DownloadFromUrlInstaller {
         FilePath installation = super.performInstallation(tool, node, log);
 
         Launcher launcher = node.createLauncher(log);
+
+        ArgumentListBuilder args = new ArgumentListBuilder();
+        args.add(installation.child(launcher.isUnix() ? "install.sh" : "install.bat").getRemote())
+            .add("--usage-reporting=false", "--path-update=false", "--bash-completion=false");
+        if (StringUtils.isNotBlank(additionalComponents))
+            args.add("--additional-components", additionalComponents);
+
             launcher.launch()
                 .stdout(log)
-                .cmds( installation.child(launcher.isUnix() ? "install.sh" : "install.bat").getRemote(),
-                        "--usage-reporting=false", "--path-update=false", "--bash-completion=false")
+                .cmds(args.toCommandArray())
                 .join();
 
         return installation;
