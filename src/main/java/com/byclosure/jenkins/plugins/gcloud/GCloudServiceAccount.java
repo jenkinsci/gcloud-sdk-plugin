@@ -36,8 +36,7 @@ public class GCloudServiceAccount {
 		final String accountId = serviceAccountConfig.getAccountId();
 		final File keyFile = getKeyFile(serviceAccountConfig);
 
-		TemporaryKeyFile tmpKeyFile = new TemporaryKeyFile(build, launcher, keyFile);
-		tmpKeyFile.copyToTmpDir();
+		TemporaryKeyFile tmpKeyFile = new TemporaryKeyFile(configDir, keyFile);
 
 		return new GCloudServiceAccount(build, launcher, listener, accountId, tmpKeyFile, configDir);
 	}
@@ -77,26 +76,5 @@ public class GCloudServiceAccount {
 			return false;
 		}
 		return true;
-	}
-
-	boolean revoke() throws IOException, InterruptedException {
-		final String revokeCmd = "gcloud auth revoke " + accountId;
-
-		int retCode = launcher.launch()
-				.pwd(build.getWorkspace())
-				.cmdAsSingleString(revokeCmd)
-				.stdout(listener.getLogger())
-				.join();
-
-		if (retCode != 0) {
-			return false;
-		}
-		return true;
-	}
-
-
-	void cleanUp() throws IOException, InterruptedException {
-		tmpKeyFile.remove();
-        configDir.deleteRecursive();
 	}
 }

@@ -85,8 +85,8 @@ public class GCloudBuildWrapper extends BuildWrapper {
 		final GCloudServiceAccount serviceAccount =
 				GCloudServiceAccount.getServiceAccount(build, launcher, listener, credentialsId, configDir);
 
-		if (!serviceAccount.activate()) {
-			serviceAccount.cleanUp();
+		if (!serviceAccount.activate(sdk)) {
+			configDir.deleteRecursive();
 			throw new InterruptedException("Couldn't activate GCloudServiceAccount");
 		}
 

@@ -41,25 +41,18 @@ public class GCloudSDKWithAuthBuilder extends Builder {
         final FilePath configDir = build.getWorkspace().createTempDir("gcloud", "config");
 		final GCloudServiceAccount serviceAccount =
 				GCloudServiceAccount.getServiceAccount(build, launcher, listener, credentialsId, configDir);
+		try {
+			if (!serviceAccount.activate(null)) {
+				return false;
+			}
 
-		if (!serviceAccount.activate()) {
-			serviceAccount.cleanUp();
-			return false;
+			if (!executeGCloudCLI(build, launcher, listener, configDir)) {
+				return false;
+			}
+			return true;
+		} finally {
+			configDir.deleteRecursive();
 		}
-
-		if (!executeGCloudCLI(build, launcher, listener, configDir)) {
-			serviceAccount.revoke();
-			serviceAccount.cleanUp();
-			return false;
-		}
-
-		if (!serviceAccount.revoke()) {
-			serviceAccount.cleanUp();
-			return false;
-		}
-
-		serviceAccount.cleanUp();
-		return true;
 	}
 
 	private boolean executeGCloudCLI(AbstractBuild build, Launcher launcher, BuildListener listener, FilePath configDir) throws IOException, InterruptedException {
