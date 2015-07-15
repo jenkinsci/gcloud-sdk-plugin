@@ -46,7 +46,7 @@ public class GCloudServiceAccount {
 
 		if (serviceAccount instanceof JsonServiceAccountConfig) {
 			keyFilePath = ((JsonServiceAccountConfig)serviceAccount).getJsonKeyFile();
-		} else if (serviceAccount instanceof JsonServiceAccountConfig) {
+		} else if (serviceAccount instanceof P12ServiceAccountConfig) {
 			keyFilePath = ((P12ServiceAccountConfig)serviceAccount).getP12KeyFile();
 		}
 
