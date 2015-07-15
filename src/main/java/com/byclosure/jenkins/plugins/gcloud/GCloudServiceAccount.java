@@ -1,5 +1,6 @@
 package com.byclosure.jenkins.plugins.gcloud;
 
+import com.cloudbees.jenkins.plugins.gcloudsdk.GCloudInstallation;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.google.jenkins.plugins.credentials.oauth.GoogleRobotPrivateKeyCredentials;
 import com.google.jenkins.plugins.credentials.oauth.JsonServiceAccountConfig;
@@ -9,21 +10,22 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 
 import java.io.File;
 import java.io.IOException;
 
 public class GCloudServiceAccount {
 
-	private final AbstractBuild build;
 	private final Launcher launcher;
-	private final BuildListener listener;
+	private final TaskListener listener;
 	private final String accountId;
 	private final TemporaryKeyFile tmpKeyFile;
     private final FilePath configDir;
 
-    public static GCloudServiceAccount getServiceAccount(AbstractBuild build, Launcher launcher,
-                                                         BuildListener listener, String credentialsId, FilePath configDir) throws IOException, InterruptedException {
+    public static GCloudServiceAccount getServiceAccount(Run build, Launcher launcher,
+														 TaskListener listener, String credentialsId, FilePath configDir) throws IOException, InterruptedException {
 		final GoogleRobotPrivateKeyCredentials credential = CredentialsProvider.findCredentialById(
 				credentialsId,
 				GoogleRobotPrivateKeyCredentials.class,
@@ -38,7 +40,7 @@ public class GCloudServiceAccount {
 
 		TemporaryKeyFile tmpKeyFile = new TemporaryKeyFile(configDir, keyFile);
 
-		return new GCloudServiceAccount(build, launcher, listener, accountId, tmpKeyFile, configDir);
+		return new GCloudServiceAccount(launcher, listener, accountId, tmpKeyFile, configDir);
 	}
 
 	private static File getKeyFile(ServiceAccountConfig serviceAccount) {
@@ -53,8 +55,7 @@ public class GCloudServiceAccount {
 		return new File(keyFilePath);
 	}
 
-	private GCloudServiceAccount(AbstractBuild build, Launcher launcher, BuildListener listener, String accountId, TemporaryKeyFile tmpKeyFile, FilePath configDir) {
-		this.build = build;
+	private GCloudServiceAccount(Launcher launcher, TaskListener listener, String accountId, TemporaryKeyFile tmpKeyFile, FilePath configDir) {
 		this.launcher = launcher;
 		this.listener = listener;
 		this.accountId = accountId;
