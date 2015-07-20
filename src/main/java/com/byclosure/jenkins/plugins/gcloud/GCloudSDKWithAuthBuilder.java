@@ -31,6 +31,11 @@ public class GCloudSDKWithAuthBuilder extends Builder {
 		this.command = command;
 	}
 
+	public String getCredentialsId() {
+		return credentialsId;
+	}
+
+
 	public String getCommand() {
 		return command;
 	}
@@ -41,25 +46,18 @@ public class GCloudSDKWithAuthBuilder extends Builder {
         final FilePath configDir = build.getWorkspace().createTempDir("gcloud", "config");
 		final GCloudServiceAccount serviceAccount =
 				GCloudServiceAccount.getServiceAccount(build, launcher, listener, credentialsId, configDir);
+		try {
+			if (!serviceAccount.activate(null)) {
+				return false;
+			}
 
-		if (!serviceAccount.activate()) {
-			serviceAccount.cleanUp();
-			return false;
+			if (!executeGCloudCLI(build, launcher, listener, configDir)) {
+				return false;
+			}
+			return true;
+		} finally {
+			configDir.deleteRecursive();
 		}
-
-		if (!executeGCloudCLI(build, launcher, listener, configDir)) {
-			serviceAccount.revoke();
-			serviceAccount.cleanUp();
-			return false;
-		}
-
-		if (!serviceAccount.revoke()) {
-			serviceAccount.cleanUp();
-			return false;
-		}
-
-		serviceAccount.cleanUp();
-		return true;
 	}
 
 	private boolean executeGCloudCLI(AbstractBuild build, Launcher launcher, BuildListener listener, FilePath configDir) throws IOException, InterruptedException {
@@ -70,19 +68,12 @@ public class GCloudSDKWithAuthBuilder extends Builder {
                 .envs("CLOUDSDK_CONFIG=" + configDir.getRemote())
                 .join();
 
-		if (retCode != 0) {
-			return false;
-		}
-		return true;
+		return retCode == 0;
 	}
 
 	@Override
 	public DescriptorImpl getDescriptor() {
 		return (DescriptorImpl) super.getDescriptor();
-	}
-
-	public String getCredentialsId() {
-		return credentialsId;
 	}
 
 	@Extension

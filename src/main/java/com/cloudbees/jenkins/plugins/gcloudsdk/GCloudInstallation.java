@@ -32,6 +32,11 @@ public class GCloudInstallation extends ToolInstallation implements NodeSpecific
     }
 
 
+    @Override
+    public GCloudInstallation translate(Node node, EnvVars envs, TaskListener listener) throws IOException, InterruptedException {
+        return (GCloudInstallation) super.translate(node, envs, listener);
+    }
+
     public GCloudInstallation forNode(Node node, TaskListener log) throws IOException, InterruptedException {
         return new GCloudInstallation(getName(), translateFor(node, log), getProperties().toList());
     }
@@ -42,6 +47,10 @@ public class GCloudInstallation extends ToolInstallation implements NodeSpecific
 
     public static GCloudInstallation[] getInstallations() {
         return Jenkins.getInstance().getDescriptorByType(DescriptorImpl.class).getInstallations();
+    }
+
+    public String getExecutable() {
+        return getHome()+"/bin/gcloud";
     }
 
     @Extension

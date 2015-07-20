@@ -18,13 +18,16 @@ import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.Computer;
 import hudson.model.Item;
 import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.security.ACL;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.util.ListBoxModel;
+import jenkins.tasks.SimpleBuildWrapper;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -33,11 +36,12 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.CheckForNull;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Map;
 import java.util.logging.Logger;
 
 @RequiresDomain(value = GCloudScopeRequirement.class)
-public class GCloudBuildWrapper extends BuildWrapper {
+public class GCloudBuildWrapper extends SimpleBuildWrapper {
 	private static final Logger LOGGER = Logger.getLogger(GCloudBuildWrapper.class.getName());
 
 	private final String installation;
@@ -49,63 +53,28 @@ public class GCloudBuildWrapper extends BuildWrapper {
         this.credentialsId = credentialsId;
     }
 
-
     @Override
-    public Launcher decorateLauncher(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException, Run.RunnerAbortedException {
+    public void setUp(Context context, Run<?, ?> build, FilePath workspace, Launcher launcher, TaskListener listener, EnvVars initialEnvironment) throws IOException, InterruptedException {
 
-        final ToolInstallation sdk = getSDK().translate(build, listener);
-
-        return new Launcher.DecoratedLauncher(launcher) {
-
-            @Override
-            public Proc launch(ProcStarter starter) throws IOException {
-                EnvVars vars = toEnvVars(starter.envs());
-                if (sdk != null) {
-                    sdk.buildEnvVars(vars);
-                }
-                return super.launch(starter.envs(Util.mapToEnv(vars)));
-            }
-
-            private EnvVars toEnvVars(String[] envs) {
-                EnvVars vars = new EnvVars();
-                for (String line : envs) {
-                    vars.addLine(line);
-                }
-                return vars;
-            }
-        };
-
-    }
-
-    @Override
-	public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
-
-        final FilePath configDir = build.getWorkspace().createTempDir("gcloud", "config");
+        GCloudInstallation sdk = getSDK();
+        sdk = sdk.translate(workspace.toComputer().getNode(), initialEnvironment, listener);
+        final FilePath configDir = workspace.createTempDir("gcloud", "config");
 
 		final GCloudServiceAccount serviceAccount =
 				GCloudServiceAccount.getServiceAccount(build, launcher, listener, credentialsId, configDir);
 
-		if (!serviceAccount.activate()) {
-			serviceAccount.cleanUp();
+		if (!serviceAccount.activate(sdk)) {
+			configDir.deleteRecursive();
 			throw new InterruptedException("Couldn't activate GCloudServiceAccount");
 		}
 
-		return new Environment() {
-			@Override
-			public void buildEnvVars(Map<String, String> env) {
-			}
+        sdk.buildEnvVars(initialEnvironment);
+        for (Map.Entry<String, String> entry : initialEnvironment.entrySet()) {
+            context.env(entry.getKey(), entry.getValue());
+        }
+        context.env("CLOUDSDK_CONFIG", configDir.getRemote());
 
-			@Override
-			public boolean tearDown(AbstractBuild build, final BuildListener listener) throws IOException, InterruptedException {
-				if (!serviceAccount.revoke()) {
-					serviceAccount.cleanUp();
-					return false;
-				}
-
-				serviceAccount.cleanUp();
-				return true;
-			}
-		};
+        context.setDisposer(new GCloudConfigDisposer(configDir));
 	}
 
     public @CheckForNull GCloudInstallation getSDK() {
@@ -115,8 +84,6 @@ public class GCloudBuildWrapper extends BuildWrapper {
         }
         return null;
     }
-
-
 
     public String getInstallation() {
         return installation;
@@ -134,7 +101,7 @@ public class GCloudBuildWrapper extends BuildWrapper {
 
 		@Override
 		public String getDisplayName() {
-			return "GCloud authentication";
+			return "GCloud SDK authentication";
 		}
 
 		@Override
@@ -165,4 +132,20 @@ public class GCloudBuildWrapper extends BuildWrapper {
 
         public static final CredentialsMatcher MATCHER = CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(GoogleRobotPrivateKeyCredentials.class));
 	}
+
+    private static class GCloudConfigDisposer extends Disposer {
+
+        private static final long serialVersionUID = 5723296082223871496L;
+
+        private final FilePath configDir;
+
+        public GCloudConfigDisposer(FilePath configDir) {
+            this.configDir = configDir;
+        }
+
+        @Override
+        public void tearDown(Run<?, ?> build, FilePath workspace, Launcher launcher, TaskListener listener) throws IOException, InterruptedException {
+            configDir.deleteRecursive();
+        }
+    }
 }
