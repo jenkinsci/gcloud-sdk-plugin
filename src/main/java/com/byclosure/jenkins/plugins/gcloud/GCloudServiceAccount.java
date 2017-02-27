@@ -2,22 +2,19 @@ package com.byclosure.jenkins.plugins.gcloud;
 
 import com.cloudbees.jenkins.plugins.gcloudsdk.GCloudInstallation;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.google.jenkins.plugins.credentials.oauth.GoogleRobotPrivateKeyCredentials;
-import com.google.jenkins.plugins.credentials.oauth.JsonServiceAccountConfig;
-import com.google.jenkins.plugins.credentials.oauth.P12ServiceAccountConfig;
-import com.google.jenkins.plugins.credentials.oauth.ServiceAccountConfig;
+import com.google.api.client.json.jackson.JacksonFactory;
+import com.google.jenkins.plugins.credentials.oauth.*;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 public class GCloudServiceAccount {
-
 	private final Launcher launcher;
 	private final TaskListener listener;
 	private final String accountId;
@@ -36,23 +33,30 @@ public class GCloudServiceAccount {
 		final ServiceAccountConfig serviceAccountConfig = credential.getServiceAccountConfig();
 
 		final String accountId = serviceAccountConfig.getAccountId();
-		final File keyFile = getKeyFile(serviceAccountConfig);
-
-		TemporaryKeyFile tmpKeyFile = new TemporaryKeyFile(configDir, keyFile);
+		final TemporaryKeyFile tmpKeyFile = getKeyFile(serviceAccountConfig, configDir);
 
 		return new GCloudServiceAccount(launcher, listener, accountId, tmpKeyFile, configDir);
 	}
 
-	private static File getKeyFile(ServiceAccountConfig serviceAccount) {
-		String keyFilePath = null;
+	private static TemporaryKeyFile getKeyFile(ServiceAccountConfig serviceAccount, FilePath configDir) {
+		TemporaryKeyFile tmpKeyFile = null;
 
-		if (serviceAccount instanceof JsonServiceAccountConfig) {
-			keyFilePath = ((JsonServiceAccountConfig)serviceAccount).getJsonKeyFile();
-		} else if (serviceAccount instanceof P12ServiceAccountConfig) {
-			keyFilePath = ((P12ServiceAccountConfig)serviceAccount).getP12KeyFile();
+		try {
+			if (serviceAccount instanceof JsonServiceAccountConfig) {
+				String keyFilePath = ((JsonServiceAccountConfig)serviceAccount).getJsonKeyFile();
+				JsonKey key = JsonKey.load(new JacksonFactory(), new FileInputStream(new File(keyFilePath)));
+				tmpKeyFile = new TemporaryKeyFile(configDir, key.toPrettyString());
+			} else if (serviceAccount instanceof P12ServiceAccountConfig) {
+				String keyFilePath = ((P12ServiceAccountConfig)serviceAccount).getP12KeyFile();
+				tmpKeyFile = new TemporaryKeyFile(configDir, keyFilePath);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
 		}
 
-		return new File(keyFilePath);
+		return tmpKeyFile;
 	}
 
 	private GCloudServiceAccount(Launcher launcher, TaskListener listener, String accountId, TemporaryKeyFile tmpKeyFile, FilePath configDir) {
@@ -68,7 +72,7 @@ public class GCloudServiceAccount {
 		if (sdk != null) {
 			exec = sdk.getExecutable();
 		}
-		final String authCmd = exec + " auth activate-service-account " + accountId + " --key-file " + tmpKeyFile.getKeyFile().getRemote();
+		final String authCmd = exec + " auth activate-service-account " + accountId + " --key-file \"" + tmpKeyFile.getKeyFile().getRemote() + "\"";
 
 		int retCode = launcher.launch()
 				.cmdAsSingleString(authCmd)
@@ -80,5 +84,9 @@ public class GCloudServiceAccount {
 			return false;
 		}
 		return true;
+	}
+
+	FilePath getKeyFile(){
+    	return tmpKeyFile.getKeyFile();
 	}
 }

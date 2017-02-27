@@ -73,6 +73,7 @@ public class GCloudBuildWrapper extends SimpleBuildWrapper {
             context.env(entry.getKey(), entry.getValue());
         }
         context.env("CLOUDSDK_CONFIG", configDir.getRemote());
+        context.env("GOOGLE_APPLICATION_CREDENTIALS", serviceAccount.getKeyFile().getRemote());
 
         context.setDisposer(new GCloudConfigDisposer(configDir));
 	}
