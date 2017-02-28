@@ -2,6 +2,7 @@ package com.byclosure.jenkins.plugins.gcloud;
 
 
 import com.google.jenkins.plugins.credentials.domains.RequiresDomain;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -17,9 +18,11 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 @RequiresDomain(value = GCloudScopeRequirement.class)
 public class GCloudSDKBuilder extends Builder {
+	private static final Logger LOGGER = Logger.getLogger(GCloudSDKBuilder.class.getName());
 
 	private final String command;
 
@@ -42,9 +45,13 @@ public class GCloudSDKBuilder extends Builder {
 	}
 
 	private boolean executeGCloudCLI(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
+		EnvVars env = build.getEnvironment(listener);
+		String binariesPath = env.get("CLOUDSDK_DIR")+"/bin/";
+
 		int retCode = launcher.launch()
 				.pwd(build.getWorkspace())
-				.cmdAsSingleString("gcloud " + command)
+				.cmdAsSingleString(binariesPath + "gcloud " + command)
+				.envs(env)
 				.stdout(listener.getLogger())
 				.join();
 
