@@ -10,6 +10,7 @@ import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.tools.ToolProperty;
 import jenkins.model.Jenkins;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
@@ -54,7 +55,7 @@ public class GCloudInstallation extends ToolInstallation implements NodeSpecific
         return getHome()+"/bin/gcloud";
     }
 
-    @Extension
+    @Extension @Symbol("gcloud")
     public static class DescriptorImpl extends ToolDescriptor<GCloudInstallation> {
 
         @Override
