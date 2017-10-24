@@ -68,6 +68,11 @@ public class GCloudInstaller extends DownloadFromUrlInstaller {
         public List<? extends Installable> getInstallables() throws IOException {
             return Collections.singletonList(SDK);
         }
+
+        @Override
+        public boolean isApplicable(Class<? extends ToolInstallation> toolType) {
+            return GCloudInstallation.class.isAssignableFrom(toolType);
+        }
     }
 
 
