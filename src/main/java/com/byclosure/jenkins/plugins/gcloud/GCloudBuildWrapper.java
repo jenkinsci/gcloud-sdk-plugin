@@ -12,20 +12,12 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.Launcher.DecoratedLauncher;
-import hudson.Proc;
-import hudson.Util;
-import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Computer;
 import hudson.model.Item;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.security.ACL;
-import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
-import hudson.tools.ToolInstallation;
 import hudson.util.ListBoxModel;
 import jenkins.tasks.SimpleBuildWrapper;
 import net.sf.json.JSONObject;
@@ -36,7 +28,6 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.CheckForNull;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Map;
 import java.util.logging.Logger;
 
