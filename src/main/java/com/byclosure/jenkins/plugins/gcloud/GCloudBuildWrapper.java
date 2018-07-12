@@ -71,6 +71,11 @@ public class GCloudBuildWrapper extends SimpleBuildWrapper {
 
     public @CheckForNull GCloudInstallation getSDK() {
         GCloudInstallation[] installations = GCloudInstallation.getInstallations();
+
+        if (installation.isEmpty() && installations.length > 0) {
+            return installations[0];
+        }
+
         for (GCloudInstallation sdk : installations) {
             if (installation.equals(sdk.getName())) return sdk;
         }
