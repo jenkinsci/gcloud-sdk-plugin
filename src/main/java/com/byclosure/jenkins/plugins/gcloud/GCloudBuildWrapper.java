@@ -48,6 +48,11 @@ public class GCloudBuildWrapper extends SimpleBuildWrapper {
     public void setUp(Context context, Run<?, ?> build, FilePath workspace, Launcher launcher, TaskListener listener, EnvVars initialEnvironment) throws IOException, InterruptedException {
 
         GCloudInstallation sdk = getSDK();
+
+        if (sdk == null) {
+            throw new RuntimeException("Could not find a matching Google Cloud SDK installation: " + installation);
+        }
+
         sdk = sdk.translate(workspace.toComputer().getNode(), initialEnvironment, listener);
         final FilePath configDir = workspace.createTempDir("gcloud", "config");
 
