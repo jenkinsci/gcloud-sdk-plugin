@@ -56,20 +56,25 @@ public class GCloudBuildWrapper extends SimpleBuildWrapper {
         sdk = sdk.translate(workspace.toComputer().getNode(), initialEnvironment, listener);
         final FilePath configDir = workspace.createTempDir("gcloud", "config");
 
-		final GCloudServiceAccount serviceAccount =
-				GCloudServiceAccount.getServiceAccount(build, launcher, listener, credentialsId, configDir);
+        final GCloudServiceAccount serviceAccount =
+                GCloudServiceAccount.getServiceAccount(build, launcher, listener, credentialsId, configDir);
 
-		if (!serviceAccount.activate(sdk)) {
-			configDir.deleteRecursive();
-			throw new InterruptedException("Couldn't activate GCloudServiceAccount");
-		}
+        if (serviceAccount != null) {
+            if (!serviceAccount.activate(sdk)) {
+                configDir.deleteRecursive();
+                throw new InterruptedException("Couldn't activate GCloudServiceAccount");
+            }
+
+            context.env("GOOGLE_APPLICATION_CREDENTIALS", serviceAccount.getKeyFile().getRemote());
+        }
+
+        context.env("CLOUDSDK_CONFIG", configDir.getRemote());
 
         sdk.buildEnvVars(initialEnvironment);
         for (Map.Entry<String, String> entry : initialEnvironment.entrySet()) {
             context.env(entry.getKey(), entry.getValue());
         }
-        context.env("CLOUDSDK_CONFIG", configDir.getRemote());
-        context.env("GOOGLE_APPLICATION_CREDENTIALS", serviceAccount.getKeyFile().getRemote());
+
 
         context.setDisposer(new GCloudConfigDisposer(configDir));
 	}

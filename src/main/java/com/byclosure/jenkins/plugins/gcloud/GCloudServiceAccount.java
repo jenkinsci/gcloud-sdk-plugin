@@ -30,6 +30,10 @@ public class GCloudServiceAccount {
 				new GCloudScopeRequirement()
 		);
 
+		if (credential == null) {
+			return null;
+		}
+
 		final ServiceAccountConfig serviceAccountConfig = credential.getServiceAccountConfig();
 
 		final String accountId = serviceAccountConfig.getAccountId();
