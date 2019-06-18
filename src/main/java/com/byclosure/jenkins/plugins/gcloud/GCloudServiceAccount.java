@@ -2,17 +2,17 @@ package com.byclosure.jenkins.plugins.gcloud;
 
 import com.cloudbees.jenkins.plugins.gcloudsdk.GCloudInstallation;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.SecretBytes;
 import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.jenkins.plugins.credentials.oauth.*;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import org.kohsuke.accmod.restrictions.suppressions.SuppressRestrictedWarnings;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.logging.Logger;
 
 public class GCloudServiceAccount {
 	private final Launcher launcher;
@@ -38,13 +38,14 @@ public class GCloudServiceAccount {
 		return new GCloudServiceAccount(launcher, listener, accountId, tmpKeyFile, configDir);
 	}
 
+	@SuppressRestrictedWarnings(JsonServiceAccountConfig.class)
 	private static TemporaryKeyFile getKeyFile(ServiceAccountConfig serviceAccount, FilePath configDir) {
 		TemporaryKeyFile tmpKeyFile = null;
 
 		try {
 			if (serviceAccount instanceof JsonServiceAccountConfig) {
-				String keyFilePath = ((JsonServiceAccountConfig)serviceAccount).getJsonKeyFile();
-				JsonKey key = JsonKey.load(new JacksonFactory(), new FileInputStream(new File(keyFilePath)));
+				SecretBytes secretKey = ((JsonServiceAccountConfig) serviceAccount).getSecretJsonKey();
+				JsonKey key = JsonKey.load(new JacksonFactory(), new ByteArrayInputStream(secretKey.getPlainData()));
 				tmpKeyFile = new TemporaryKeyFile(configDir, key.toPrettyString());
 			} else if (serviceAccount instanceof P12ServiceAccountConfig) {
 				String keyFilePath = ((P12ServiceAccountConfig)serviceAccount).getP12KeyFile();

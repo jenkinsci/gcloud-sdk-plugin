@@ -14,6 +14,12 @@
 	<version>0.0.2-SNAPSHOT</version>
 	<packaging>hpi</packaging>
 
+	<properties>
+		<jenkins.version>2.60.3</jenkins.version>
+		<java.level>8</java.level>
+		<doclint>none</doclint>
+	</properties>
+
 	<name>GCloud SDK Plugin</name>
 	<description>GCloud SDK Plugin allows users to invoke gcloud tools with jenkins credentials.</description>
 	<url>https://wiki.jenkins-ci.org/display/JENKINS/GCloud+SDK+Plugin</url>
@@ -55,9 +61,15 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>org.kohsuke</groupId>
+			<artifactId>access-modifier-suppressions</artifactId>
+			<version>1.16</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>google-oauth-plugin</artifactId>
-			<version>0.4</version>
+			<version>0.8</version>
 		</dependency>
 	</dependencies>
 
