@@ -3,7 +3,7 @@ package com.byclosure.jenkins.plugins.gcloud;
 import com.cloudbees.jenkins.plugins.gcloudsdk.GCloudInstallation;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.SecretBytes;
-import com.google.api.client.json.jackson.JacksonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.jenkins.plugins.credentials.oauth.*;
 import hudson.FilePath;
 import hudson.Launcher;
