@@ -42,11 +42,18 @@ public class GCloudSDKWithAuthBuilder extends Builder {
 
 	@Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+		final FilePath ws = build.getWorkspace();
+		if (ws == null) throw new RuntimeException("Unable to get build workspace.");
 
-        final FilePath configDir = build.getWorkspace().createTempDir("gcloud", "config");
+		final FilePath configDir = ws.createTempDir("gcloud", "config");
 		final GCloudServiceAccount serviceAccount =
 				GCloudServiceAccount.getServiceAccount(build, launcher, listener, credentialsId, configDir);
+
 		try {
+			if (serviceAccount == null) {
+				return false;
+			}
+
 			if (!serviceAccount.activate(null)) {
 				return false;
 			}

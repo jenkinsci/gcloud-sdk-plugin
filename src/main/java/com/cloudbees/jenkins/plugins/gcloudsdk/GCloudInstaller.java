@@ -76,7 +76,7 @@ public class GCloudInstaller extends DownloadFromUrlInstaller {
     }
 
 
-    public static Installable SDK = new Installable() {
+    public static final Installable SDK = new Installable() {
         {
             id = "google-cloud-sdk";
             url = "https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.zip";

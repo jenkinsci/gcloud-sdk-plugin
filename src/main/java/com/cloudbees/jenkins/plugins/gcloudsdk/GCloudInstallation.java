@@ -39,10 +39,12 @@ public class GCloudInstallation extends ToolInstallation implements NodeSpecific
         return (GCloudInstallation) super.translate(node, envs, listener);
     }
 
+    @Override
     public GCloudInstallation forNode(Node node, TaskListener log) throws IOException, InterruptedException {
         return new GCloudInstallation(getName(), translateFor(node, log), getProperties().toList());
     }
 
+    @Override
     public GCloudInstallation forEnvironment(EnvVars environment) {
         return new GCloudInstallation(getName(), environment.expand(getHome()), getProperties().toList());
     }

@@ -13,7 +13,9 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractProject;
+import hudson.model.Computer;
 import hudson.model.Item;
+import hudson.model.Node;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.security.ACL;
@@ -53,7 +55,12 @@ public class GCloudBuildWrapper extends SimpleBuildWrapper {
             throw new RuntimeException("Could not find a matching Google Cloud SDK installation: " + installation);
         }
 
-        sdk = sdk.translate(workspace.toComputer().getNode(), initialEnvironment, listener);
+        Computer computer = workspace.toComputer();
+        if (computer == null) throw new RuntimeException("Unable to get workspace node.");
+        Node node = computer.getNode();
+        if (node == null) throw new RuntimeException("Unable to get workspace node.");
+
+        sdk = sdk.translate(node, initialEnvironment, listener);
         final FilePath configDir = workspace.createTempDir("gcloud", "config");
 
         final GCloudServiceAccount serviceAccount =

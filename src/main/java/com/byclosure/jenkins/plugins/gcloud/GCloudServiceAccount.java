@@ -11,6 +11,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.kohsuke.accmod.restrictions.suppressions.SuppressRestrictedWarnings;
 
+import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
@@ -43,14 +44,18 @@ public class GCloudServiceAccount {
 	}
 
 	@SuppressRestrictedWarnings(JsonServiceAccountConfig.class)
+	@Nullable
 	private static TemporaryKeyFile getKeyFile(ServiceAccountConfig serviceAccount, FilePath configDir) {
 		TemporaryKeyFile tmpKeyFile = null;
 
 		try {
 			if (serviceAccount instanceof JsonServiceAccountConfig) {
 				SecretBytes secretKey = ((JsonServiceAccountConfig) serviceAccount).getSecretJsonKey();
-				JsonKey key = JsonKey.load(new JacksonFactory(), new ByteArrayInputStream(secretKey.getPlainData()));
-				tmpKeyFile = new TemporaryKeyFile(configDir, key.toPrettyString());
+
+				if (secretKey != null) {
+					JsonKey key = JsonKey.load(new JacksonFactory(), new ByteArrayInputStream(secretKey.getPlainData()));
+					tmpKeyFile = new TemporaryKeyFile(configDir, key.toPrettyString());
+				}
 			} else if (serviceAccount instanceof P12ServiceAccountConfig) {
 				String keyFilePath = ((P12ServiceAccountConfig)serviceAccount).getP12KeyFile();
 				tmpKeyFile = new TemporaryKeyFile(configDir, keyFilePath);
