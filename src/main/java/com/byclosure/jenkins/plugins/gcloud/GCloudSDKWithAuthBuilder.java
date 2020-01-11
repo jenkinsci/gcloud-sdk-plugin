@@ -70,7 +70,7 @@ public class GCloudSDKWithAuthBuilder extends Builder {
 	private boolean executeGCloudCLI(AbstractBuild build, Launcher launcher, BuildListener listener, FilePath configDir) throws IOException, InterruptedException {
 		int retCode = launcher.launch()
 				.pwd(build.getWorkspace())
-				.cmdAsSingleString("gcloud " + command)
+				.cmdAsSingleString(command)
 				.stdout(listener.getLogger())
                 .envs("CLOUDSDK_CONFIG=" + configDir.getRemote())
                 .join();
